@@ -1,5 +1,6 @@
 from dataclasses import dataclass, asdict, field
 import json
+from typing import Any
 
 
 @dataclass
@@ -18,3 +19,7 @@ class Metadata:
 
     def to_json(self):
         return json.dumps(self.to_dict(), ensure_ascii=False)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]):
+        return cls(**data)

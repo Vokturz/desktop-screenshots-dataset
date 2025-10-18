@@ -1,8 +1,12 @@
+#!/usr/bin/env python3
+"""
+Script to scrape project slugs, fetch metadata, and save to a file.
+"""
+
 import argparse
 import json
 import time
 from pathlib import Path
-
 import requests
 from tqdm import tqdm
 
