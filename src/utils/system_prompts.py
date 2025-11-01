@@ -24,14 +24,13 @@ A screenshot is INVALID if it shows:
 ### ADDITIONAL GUIDELINES
 - Do not assume that Unix-like UI elements, permissions, or OS-specific terms automatically make the screenshot invalid.
 - Use the app title and description as context, but rely primarily on what is visible in the screenshot.
-- Provide concise reasoning for your judgment.
 - ONLY COMPUTER APPS ARE VALID. Any mobile app is invalid.
+- Provide concise reasoning for your judgment.
+- Be precise, clear, and consistent
 - Use plain English, responding in the following format:
 
-VALID: [brief reason]
-INVALID: [brief reason]
-
-Be precise, clear, and consistent."""
+<brief reason>
+VALID or INVALID"""
 
 
 SCREENSHOT_CLASSIFIER = """You are an AI assistant that analyzes computer screenshots to describe what is currently visible on screen.

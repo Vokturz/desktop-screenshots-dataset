@@ -125,7 +125,7 @@ def check_screenshot_validity(
 
     if print_assistant_message:
         print(assistant_message)
-    return assistant_message.lower().strip().startswith("valid")
+    return not assistant_message.lower().strip().endswith("invalid")
 
 
 def create_example(image_path: str, user_text: str, assistant_text: str):
