@@ -6,8 +6,8 @@ import re
 import requests
 import matplotlib.pyplot as plt
 
-from model.model import ImageAnalysis, VLMConfig, Message
-from utils.system_prompts import OCR, SCREENSHOT_CLASSIFIER, SCREENSHOT_VALIDITY
+from src.model.model import ImageAnalysis, VLMConfig, Message
+from src.utils.system_prompts import OCR, SCREENSHOT_CLASSIFIER, SCREENSHOT_VALIDITY
 
 # pyright: reportUnknownMemberType=false
 

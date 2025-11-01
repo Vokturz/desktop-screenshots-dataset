@@ -99,7 +99,6 @@ class VLMConfig:
     top_k: int = 20
     repetition_penalty: float = 1.0
     presence_penalty: float = 1.5
-    greedy: bool = False
     stream: bool = False
 
     def to_dict(self):

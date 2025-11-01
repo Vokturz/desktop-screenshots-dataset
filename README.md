@@ -21,3 +21,9 @@ uv run -m src.scripts.download_screenshots --max-workers 10
 
 Clean and upload to HF the dataset `Vokturz/sourceforge-app-screenshots`
 - [src/notebooks/00_data_processing.ipynb](src/notebooks/00_data_processing.ipynb)
+
+
+## 4. Validate screenshots
+```bash
+uv run -m src.scripts.validate_dataset
+```
