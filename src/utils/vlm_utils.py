@@ -8,9 +8,7 @@ import matplotlib.pyplot as plt
 
 from src.model.model import ImageAnalysis, VLMConfig, Message
 from src.utils.system_prompts import OCR, SCREENSHOT_CLASSIFIER, SCREENSHOT_VALIDITY
-
 # pyright: reportUnknownMemberType=false
-# pyright: reportUnknownVariableType=false
 
 
 def display_image(example: dict[str, Any], figsize: tuple[int, int] = (12, 10)):
@@ -69,12 +67,12 @@ def do_vlm_request(
 
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
-    data = {
+    data: dict[str, Any] = {
         "model": model,
         "messages": [msg.to_dict() for msg in messages],
         **config.to_dict(),
     }
-    response = requests.post(url, headers=headers, json=data, timeout=timeout)  # pyright: ignore
+    response = requests.post(url, headers=headers, json=data, timeout=timeout)
     response.raise_for_status()
 
     resp = response.json()
@@ -167,12 +165,17 @@ def do_image_analysis(
     print_assistant_message: bool = False,
     custom_system_prompt: str | None = None,
     from_src: bool = False,
+    attempt: int = 1,
 ):
     """Analyze a screenshot using VLM to extract description, keywords, and category.
 
     Performs comprehensive analysis of a desktop screenshot using a Vision Language
     Model. Uses few-shot learning with predefined examples to ensure consistent
     output format. Extracts structured information in XML tags.
+
+    The function validates that the extracted category is one of the predefined valid
+    categories. If not, it retries up to 3 times with additional instructions to
+    select a valid category. After 3 failed attempts, it defaults to 'other'.
 
     Args:
         example: Dictionary containing:
@@ -181,6 +184,8 @@ def do_image_analysis(
             - 'title': Application window title
         print_assistant_message: Whether to print the full VLM response
         custom_system_prompt: Optional custom system prompt to override default
+        from_src: Whether to use src-relative paths for example images
+        attempt: Current attempt number (1-3). Used internally for retry logic.
 
     Returns:
         ImageAnalysis: Object containing extracted description, keywords, and category
@@ -191,10 +196,40 @@ def do_image_analysis(
 
     Note:
         The function expects the VLM to respond with content wrapped in
-        <description>, <keywords>, and <category> XML tags.
+        <description>, <keywords>, and <category> XML tags. Category validation
+        ensures the extracted category matches one of the predefined options.
     """
+    # Define valid categories from system prompt
+    valid_categories = {
+        "code editor",
+        "terminal",
+        "document editor",
+        "spreadsheets",
+        "database tools",
+        "email app",
+        "chat/messaging",
+        "video conferencing",
+        "file manager",
+        "music streaming",
+        "video streaming",
+        "social media",
+        "online shopping",
+        "research/browsing",
+        "game",
+        "media editing",
+        "system utilities",
+        "productivity/project tools",
+        "finance/accounting",
+        "other",
+    }
+
     user_text = f'This application whose process name is "{example["slug"]}" has the following title: "{example["title"]}".'
     user_text += " Describe only what you can see in this screenshot without making assumptions about user intentions or goals. Don't forget to use <description>, <keywords>, and <category> tags separately."
+
+    # Add category validation instruction on retry attempts
+    if attempt > 1:
+        categories_list = ", ".join(sorted(valid_categories))
+        user_text += f"\n\nIMPORTANT: The category MUST be exactly one of these options: {categories_list}. Please ensure you select the most appropriate category from this list."
 
     example_1 = [
         "src/data/examples/code-editor.png"
@@ -245,6 +280,27 @@ def do_image_analysis(
             .strip()
         )
         result[xml_tag] = content
+
+    # Validate category and retry if invalid
+    extracted_category = result["category"]
+    if extracted_category not in valid_categories:
+        if attempt <= 3:
+            print(
+                f"Invalid category '{extracted_category}' on attempt {attempt}/3. Retrying..."
+            )
+            return do_image_analysis(
+                example=example,
+                print_assistant_message=print_assistant_message,
+                custom_system_prompt=custom_system_prompt,
+                from_src=from_src,
+                attempt=attempt + 1,
+            )
+        else:
+            print(
+                f"Failed to get valid category after 3 attempts. Got: '{extracted_category}'. Using 'other' as fallback."
+            )
+            result["category"] = "other"
+
     return ImageAnalysis.from_dict(result)
 
 
@@ -254,7 +310,7 @@ def do_ocr(
     print_assistant_message: bool = False,
     attempt: int = 1,
     custom_system_prompt: str | None = None,
-):
+) -> str:
     """Perform Optical Character Recognition on a screenshot using VLM.
 
     Uses a Vision Language Model to extract text content from images. Can handle
