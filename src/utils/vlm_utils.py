@@ -10,6 +10,7 @@ from src.model.model import ImageAnalysis, VLMConfig, Message
 from src.utils.system_prompts import OCR, SCREENSHOT_CLASSIFIER, SCREENSHOT_VALIDITY
 
 # pyright: reportUnknownMemberType=false
+# pyright: reportUnknownVariableType=false
 
 
 def display_image(example: dict[str, Any], figsize: tuple[int, int] = (12, 10)):
@@ -33,6 +34,7 @@ def display_image(example: dict[str, Any], figsize: tuple[int, int] = (12, 10)):
 def do_vlm_request(
     messages: list[Message],
     config: VLMConfig | None = None,
+    timeout: float | None = None,
 ):
     """Send a request to the Vision Language Model API.
 
@@ -42,12 +44,14 @@ def do_vlm_request(
     Args:
         messages: List of Message objects to send to the API
         config: Optional VLM configuration. If None, uses default VLMConfig()
+        timeout: Optional timeout in seconds for the request
 
     Returns:
         str: The assistant's response content from the API
 
     Raises:
         requests.HTTPError: If the API request fails
+        requests.Timeout: If the request times out
 
     Environment Variables:
         MODEL: Model name to use (default: "Qwen/Qwen3-VL-30B-A3B-Instruct")
@@ -65,12 +69,12 @@ def do_vlm_request(
 
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
-    data = {  # pyright: ignore
+    data = {
         "model": model,
         "messages": [msg.to_dict() for msg in messages],
         **config.to_dict(),
     }
-    response = requests.post(url, headers=headers, json=data)  # pyright: ignore
+    response = requests.post(url, headers=headers, json=data, timeout=timeout)  # pyright: ignore
     response.raise_for_status()
 
     resp = response.json()
@@ -162,6 +166,7 @@ def do_image_analysis(
     example: dict[str, Any],
     print_assistant_message: bool = False,
     custom_system_prompt: str | None = None,
+    from_src: bool = False,
 ):
     """Analyze a screenshot using VLM to extract description, keywords, and category.
 
@@ -192,21 +197,19 @@ def do_image_analysis(
     user_text += " Describe only what you can see in this screenshot without making assumptions about user intentions or goals. Don't forget to use <description>, <keywords>, and <category> tags separately."
 
     example_1 = [
-        "../data/examples/code-editor.png",
+        "src/data/examples/code-editor.png"
+        if from_src
+        else "../data/examples/code-editor.png",
         'This application whose process name is "dev.zed.Zed" has the following title: "loyca-ai - sql.rs"',
-        """<description>
-    A Rust file, `sql.rs`, is open in the "loyca-ai" Tauri project. The code implements a thread-safe, lazily-initialized singleton pattern for a SQLite database connection using the `once_cell` and `Mutex` crates. The `init` function retrieves the application's data directory via the Tauri API to create or open an `sqlite.db` file with `rusqlite`.
-    </description>
-    <keywords>Rust, Tauri, SQLite, rusqlite, database connection, singleton pattern, thread safety, OnceCell, backend development</keywords>
+        """<description>The screenshot shows a code editor window from the application "Zed" with the project "loyca-ai" open. The left sidebar displays the project’s folder structure. Inside `src/tauri/src/sql/`, the file `sql.rs` is currently open in the main editor area. The code is written in Rust, defining functions such as `init` and `setup_database`. The code deals with initializing a SQLite database connection using `OnceCell` and `Mutex`. There are imports for `once_cell`, `rusqlite`, `tauri`, and others. The cursor is located in the main code editing area, near the end of the `init` function implementation.</description>
+        <keywords>Zed, code editor, Rust, sql.rs, OnceCell, rusqlite, SQLite, database, src-tauri, backend</keywords>
     <category>code editor</category>""",
     ]
     example_2 = [
-        "../data/examples/reddit.png",
+        "src/data/examples/reddit.png" if from_src else "../data/examples/reddit.png",
         'This application whose process name is "app.zen_browser.zen" has the following title: "Reddit - The heart of the internet — Zen Browser".',
-        """"<description>
-    The user is browsing their Reddit feed. Two posts are visible: one from the subreddit r/PeterExplainsTheJoke titled "What game??", showing an image of a Chuck E. Cheese building with smoke coming from it and the caption "Somebody beat the game". Below it is a post from r/LocalLLaMA titled "Local reasoning model", asking for recommendations for non-Chinese AI reasoning models.
-    </description>
-    <keywords>Reddit, social media, meme, r/PeterExplainsTheJoke, r/LocalLLaMA, AI models, LLM, reasoning model, browsing</keywords>
+        """"<description>The screen displays the Reddit website within a web browser. The user is viewing a feed, with the top post from the subreddit "r/PeterExplainsTheJoke" titled "What game??". This post contains a video of a Chuck E. Cheese building on fire, with a large plume of smoke and a fire truck ladder visible. Text overlaid on the video says, "Somebody beat the game". Below this, a second post from "r/LocalLLaMA" titled "Local reasoning model" is partially visible.</description>
+    <keywords>Reddit, social media, meme, r/PeterExplainsTheJoke, r/LocalLLaMA, AI models, LLM, browsing</keywords>
     <category>social media</category>""",
     ]
 
@@ -247,23 +250,25 @@ def do_image_analysis(
 
 def do_ocr(
     example: dict[str, Any],
-    image_description: str = "",
+    image_analysis: ImageAnalysis | None = None,
     print_assistant_message: bool = False,
+    attempt: int = 1,
     custom_system_prompt: str | None = None,
 ):
     """Perform Optical Character Recognition on a screenshot using VLM.
 
     Uses a Vision Language Model to extract text content from images. Can handle
     both general OCR tasks and specific image descriptions. Special handling for
-    markdown code blocks in the response.
+    markdown code blocks in the response. Implements retry logic with up to 3 attempts.
 
     Args:
         example: Dictionary containing:
             - 'image': PIL Image object to perform OCR on
             - 'title': Application title (used if no image_description provided)
-        image_description: Custom description/prompt for OCR task. If empty,
+        image_analysis: Custom ImageAnalysis object for OCR task. If None,
             defaults to OCR request for the application title
         print_assistant_message: Whether to print the full VLM response
+        attempt: Current attempt number (1-3). Used internally for retry logic.
         custom_system_prompt: Optional custom system prompt to override default
 
     Returns:
@@ -272,13 +277,25 @@ def do_ocr(
             the full response.
 
     Note:
-        If the VLM response contains a markdown code block (```markdown...```),
-        only the content inside the block is returned. Other code block types
-        and plain text responses are returned as-is.
+        Attempts 1-2 use a 10-second timeout. Attempt 3 has no timeout.
+        On attempts 2-3, adds a note to avoid repetitive content.
+        If the VLM response contains a markdown code block
+        (```markdown...```), only the content inside the block is returned.
+        Other code block types and plain text responses are returned as-is.
     """
     user_text = (
-        image_description if image_description else f'Do OCR for "{example["title"]}". '
+        image_analysis.description
+        if image_analysis
+        else f'Do OCR for "{example["title"]}".'
     )
+    if attempt > 2:
+        user_text += "\n\nIMPORTANT: I don't need the whole content. Focus on main elements only and REPLACE REPETITIVE TEXT with `[...]`."
+    elif attempt > 1:
+        user_text += "\n\nIMPORTANT: I don't need the whole content. Avoid background text and REPLACE REPETITIVE TEXT with `[...]`."
+    else:
+        user_text += (
+            "\n\nIMPORTANT: Remember, DO NOT MAKE UP content and AVOID REPETITIVE TEXT."
+        )
 
     img = example["image"]
     buffer = io.BytesIO()
@@ -293,7 +310,27 @@ def do_ocr(
         Message.user(text=user_text, image_url=f"data:image/png;base64,{image_base64}"),
     ]
 
-    assistant_message = do_vlm_request(messages)
+    # Attempts 1-2 with timeout, attempt 3 without timeout
+    if attempt <= 2:
+        try:
+            assistant_message = do_vlm_request(messages, timeout=10.0)
+        except requests.Timeout:
+            if attempt < 3:
+                print(
+                    f"OCR: Timeout occurred for {example['title']} (attempt {attempt}/3)"
+                )
+                return do_ocr(
+                    example=example,
+                    image_analysis=image_analysis,
+                    print_assistant_message=print_assistant_message,
+                    attempt=attempt + 1,
+                    custom_system_prompt=custom_system_prompt,
+                )
+            else:
+                # Final attempt failed, re-raise the timeout
+                raise
+    else:
+        assistant_message = do_vlm_request(messages, timeout=30.0)
 
     if print_assistant_message:
         print(assistant_message)
