@@ -333,7 +333,7 @@ def do_ocr(
             the full response.
 
     Note:
-        Attempts 1-2 use a 10-second timeout. Attempt 3 has no timeout.
+        Attempts 1-2 use a 20-second timeout. Attempt 3 has 30-second timeout.
         On attempts 2-3, adds a note to avoid repetitive content.
         If the VLM response contains a markdown code block
         (```markdown...```), only the content inside the block is returned.
@@ -366,10 +366,9 @@ def do_ocr(
         Message.user(text=user_text, image_url=f"data:image/png;base64,{image_base64}"),
     ]
 
-    # Attempts 1-2 with timeout, attempt 3 without timeout
     if attempt <= 2:
         try:
-            assistant_message = do_vlm_request(messages, timeout=10.0)
+            assistant_message = do_vlm_request(messages, timeout=20.0)
         except requests.Timeout:
             if attempt < 3:
                 print(
