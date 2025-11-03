@@ -117,19 +117,6 @@ Exclude uncertain or incomplete elements:
 
 ---
 
-### SPECIAL RULE FOR DIAGRAMS
-If the image contains a **diagram, flowchart, architecture, or relationship graph**:
-- Recreate it using **Mermaid syntax** in a fenced code block:
-  ```mermaid
-  graph TD
-      A --> B
-  ```
-
-* Keep node labels as close as possible to the text shown in the diagram.
-* If connections or labels are unclear, omit them instead of inventing structure.
-
----
-
 ### OUTPUT RULES
 
 1. Output **only Markdown** — no explanations, no commentary.
@@ -143,19 +130,31 @@ If the image contains a **diagram, flowchart, architecture, or relationship grap
 
 ---
 
-**Example (diagram detected):**
-
-```mermaid
-flowchart LR
-    A["custom A name"] --> B["custom B name"]
-    B --> C["custom C name"]
-```
-
 **Example (normal text):**
 
 ```markdown
 # Error Log
 Build failed: missing dependency
+```
+
+**Example (normal text with code block):**
+
+```markdown
+# How to Build
+To build the project, run:
+```bash
+npm install
+npm run build
+```
+```
+
+**Example (terminal):**
+
+```bash
+ls -l ./folder
+total 2
+-rw-r--r-- 1 user group 1234 May 25 14:30 file1.txt
+drwxr-xr-x 1 user group 5678 May 25 14:31 src
 ```
 
 **Example (table):**
@@ -167,7 +166,7 @@ Build failed: missing dependency
 | Row 2     | Value 2   |
 ```
 
-**Example (complex image, e.g., illustration or mixed visual):**
+**Example (complex image, e.g., illustration, mixed visual, 3d rendering, map):**
 
 ```markdown
 [Detailed image description]

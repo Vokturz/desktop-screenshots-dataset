@@ -166,7 +166,7 @@ def do_image_analysis(
     custom_system_prompt: str | None = None,
     from_src: bool = False,
     attempt: int = 1,
-):
+) -> ImageAnalysis:
     """Analyze a screenshot using VLM to extract description, keywords, and category.
 
     Performs comprehensive analysis of a desktop screenshot using a Vision Language
