@@ -29,8 +29,8 @@ uv run -m src.scripts.validate_dataset
 
 ## 5. Get Image Analysis and OCR
 ```bash
-# First run the analysys
-uv run -m src.scripts.analyzed_validated_dataset
+# First run the analysis
+uv run -m src.scripts.analyze_validated_dataset
 # Then run ocr
 uv run -m src.scripts.ocr_validated_dataset
 ```

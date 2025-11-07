@@ -1,13 +1,15 @@
 import base64
 import io
 import os
-from typing import Any
 import re
-import requests
-import matplotlib.pyplot as plt
+from typing import Any
 
-from src.model.model import ImageAnalysis, VLMConfig, Message
+import matplotlib.pyplot as plt
+import requests
+
+from src.model.model import ImageAnalysis, Message, VLMConfig
 from src.utils.system_prompts import OCR, SCREENSHOT_CLASSIFIER, SCREENSHOT_VALIDITY
+
 # pyright: reportUnknownMemberType=false
 
 
@@ -349,9 +351,7 @@ def do_ocr(
     elif attempt > 1:
         user_text += "\n\nIMPORTANT: I don't need the whole content. Avoid background text and REPLACE REPETITIVE TEXT with `[...]`."
     else:
-        user_text += (
-            "\n\nIMPORTANT: Remember, DO NOT MAKE UP content and AVOID REPETITIVE TEXT."
-        )
+        user_text += "\n\nIMPORTANT: Remember, DO NOT MAKE UP content and REPLACE REPETITIVE TEXT with `[...]`."
 
     img = example["image"]
     buffer = io.BytesIO()

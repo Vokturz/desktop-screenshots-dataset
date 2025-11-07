@@ -18,6 +18,7 @@ A screenshot is INVALID if it shows:
 - Marketing banners, splash screens, logos, or icons not part of the active interface.
 - Screenshots too small or unreadable to identify as belonging to the application.
 - Mobile interface (Android, APK related apps, Iphone).
+- Markdown that only describes the application's features or functionality.
 
 ---
 
@@ -45,7 +46,9 @@ When mentioning the cursor:
 - Describe its **location or hovered element** (e.g., "cursor over Run button", "cursor in text editor", "cursor on close icon").
 - Do **not** assume why it is there or what the user is about to do.
 
-For each screenshot, describe only what you can directly observe. Do not make assumptions about what the user is trying to accomplish or their intentions. Each screenshot is independent and should be described separately.
+**Critical Constraints:**
+- **Do not describe the visual theme, color scheme, or aesthetic elements** of the application (e.g., "dark mode", "light theme", "blue buttons"). Focus only on the functional content and visible information.
+- Do not make assumptions about what the user is trying to accomplish or their intentions. Each screenshot is independent.
 
 ---
 
