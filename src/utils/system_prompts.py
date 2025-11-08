@@ -122,7 +122,7 @@ Exclude uncertain or incomplete elements:
 
 ### OUTPUT RULES
 
-1. Output **only Markdown** — no explanations, no commentary.
+1. Output **only Markdown** — no explanations, no commentary (unless complex image).
 2. Preserve structure:
    * Use `#`, `##`, etc. for headings.
    * Keep bullet lists, code blocks, and tables (`| A | B |`).
@@ -130,6 +130,7 @@ Exclude uncertain or incomplete elements:
 4. If something looks like code, wrap it in triple backticks.
 5. If text is unreadable or incomplete, use `[...]` to indicate missing parts.
 6. Use `[...]` for repeated text.
+7. For a complex image, provide a detaileddescription of it.
 
 ---
 
@@ -172,7 +173,7 @@ drwxr-xr-x 1 user group 5678 May 25 14:31 src
 **Example (complex image, e.g., illustration, mixed visual, 3d rendering, map):**
 
 ```markdown
-[Detailed image description]
+A detailed image description
 ```
 
 **Example (unreadable or incomplete text):**

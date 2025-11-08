@@ -368,7 +368,7 @@ def do_ocr(
 
     if attempt <= 2:
         try:
-            assistant_message = do_vlm_request(messages, timeout=20.0)
+            assistant_message = do_vlm_request(messages, timeout=8.0)
         except requests.Timeout:
             if attempt < 3:
                 print(
@@ -385,7 +385,7 @@ def do_ocr(
                 # Final attempt failed, re-raise the timeout
                 raise
     else:
-        assistant_message = do_vlm_request(messages, timeout=30.0)
+        assistant_message = do_vlm_request(messages, timeout=12.0)
 
     if print_assistant_message:
         print(assistant_message)
